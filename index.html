@@ -13,6 +13,7 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      transition: background 0.3s;
     }
     .game {
       text-align: center;
@@ -22,10 +23,9 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       width: 90%;
       max-width: 500px;
+      position: relative;
     }
-    h1 {
-      margin-bottom: 20px;
-    }
+    h1 { margin-bottom: 20px; }
     #guessInput {
       width: 200px;
       padding: 12px;
@@ -41,10 +41,7 @@
       margin: 8px;
       border: 1px solid #ccc;
       border-radius: 8px;
-      transition:
-        background 0.3s cubic-bezier(.4,2,.6,1),
-        box-shadow 0.3s cubic-bezier(.4,2,.6,1),
-        transform 0.2s cubic-bezier(.4,2,.6,1);
+      transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
       position: relative;
       z-index: 1;
       overflow: hidden;
@@ -65,20 +62,53 @@
       background: rgba(255,23,68,0.15);
       border-radius: 100%;
       transform: translate(-50%, -50%);
-      transition: width 0.4s cubic-bezier(.4,2,.6,1), height 0.4s cubic-bezier(.4,2,.6,1);
+      transition: width 0.4s, height 0.4s;
       z-index: -1;
     }
     .game-btn:hover::after {
       width: 250%;
       height: 400%;
     }
-    nav {
-      margin-top: 30px;
+
+    /* Win animation */
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0;
+      animation: confetti-fall 1s linear forwards;
     }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg); opacity:1; }
+      100% { transform: translateY(300px) rotate(720deg); opacity:0; }
+    }
+
+    /* Lose animation */
+    .shake {
+      animation: shake 0.3s;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-10px); }
+      40%, 80% { transform: translateX(10px); }
+    }
+    .flash {
+      animation: flashRed 0.3s;
+    }
+    @keyframes flashRed {
+      0% { background: #f9f9f9; }
+      50% { background: #ff000050; }
+      100% { background: #f9f9f9; }
+    }
+
+    nav { margin-top: 30px; }
   </style>
 </head>
 <body>
-  <div class="game">
+  <div class="game" id="gameContainer">
     <h1>🎮 Guess the Number</h1>
     <p id="level"></p>
     <p id="range"></p>
@@ -95,23 +125,21 @@
     </nav>
   </div>
 
-  <script>
-    function attemptsForLevel(level) {
-      return 5 + (level - 1) * 2;
-    }
-    function maxRangeForLevel(level) {
-      return level * 100;
-    }
+  <!-- Sound Effects -->
+  <audio id="winSound" src="win.wav" preload="auto"></audio>
+  <audio id="loseSound" src="lose.wav" preload="auto"></audio>
 
-    // Load from sessionStorage or create new game
+  <script>
+    const gameContainer = document.getElementById("gameContainer");
+    const winSound = document.getElementById("winSound");
+    const loseSound = document.getElementById("loseSound");
+
+    function attemptsForLevel(level) { return 5 + (level - 1) * 2; }
+    function maxRangeForLevel(level) { return level * 100; }
+
     let gameData = sessionStorage.getItem("gameData")
       ? JSON.parse(sessionStorage.getItem("gameData"))
-      : {
-          level: 1,
-          number: Math.floor(Math.random() * 100) + 1,
-          attempts: 5,
-          lastMessage: ""
-        };
+      : { level: 1, number: Math.floor(Math.random() * 100) + 1, attempts: 5, lastMessage: "" };
 
     const levelEl = document.getElementById("level");
     const rangeEl = document.getElementById("range");
@@ -127,12 +155,31 @@
       sessionStorage.setItem("gameData", JSON.stringify(gameData));
     }
 
+    function spawnConfetti() {
+      for(let i=0;i<50;i++){
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.left = Math.random()*100 + '%';
+        confetti.style.background = `hsl(${Math.random()*360}, 70%, 60%)`;
+        gameContainer.appendChild(confetti);
+        setTimeout(()=> confetti.remove(), 1000);
+      }
+    }
+
+    function triggerLoseAnimation() {
+      gameContainer.classList.add('shake', 'flash');
+      setTimeout(()=> gameContainer.classList.remove('shake','flash'), 300);
+    }
+
     document.getElementById("submitGuess").addEventListener("click", () => {
       const guess = Number(inputEl.value);
       if (!guess) return;
 
       if (guess === gameData.number) {
         gameData.lastMessage = `🎉 You guessed ${guess}. Correct! Moving to next level.`;
+        spawnConfetti();
+        winSound.currentTime = 0; winSound.play();
+
         gameData.level++;
         if (gameData.level > 100) {
           gameData.lastMessage = "🏆 Congratulations! You finished all 100 levels!";
@@ -144,6 +191,9 @@
         gameData.attempts--;
         if (gameData.attempts === 0) {
           gameData.lastMessage = `💀 You guessed ${guess}. Wrong! The number was ${gameData.number}. Restarting at Level 1.`;
+          triggerLoseAnimation();
+          loseSound.currentTime = 0; loseSound.play();
+
           gameData.level = 1;
           gameData.attempts = attemptsForLevel(1);
           gameData.number = Math.floor(Math.random() * maxRangeForLevel(1)) + 1;
