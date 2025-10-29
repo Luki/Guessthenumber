@@ -70,34 +70,14 @@
       height: 400%;
     }
 
-    /* Win animation */
-    .confetti {
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      z-index: 10;
-      pointer-events: none;
-      opacity: 0;
-      animation: confetti-fall 1s linear forwards;
-    }
-    @keyframes confetti-fall {
-      0% { transform: translateY(0) rotate(0deg); opacity:1; }
-      100% { transform: translateY(300px) rotate(720deg); opacity:0; }
-    }
-
-    /* Lose animation */
-    .shake {
-      animation: shake 0.3s;
-    }
+    /* Lose animations */
+    .shake { animation: shake 0.3s; }
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
       20%, 60% { transform: translateX(-10px); }
       40%, 80% { transform: translateX(10px); }
     }
-    .flash {
-      animation: flashRed 0.3s;
-    }
+    .flash { animation: flashRed 0.3s; }
     @keyframes flashRed {
       0% { background: #f9f9f9; }
       50% { background: #ff000050; }
@@ -155,19 +135,51 @@
       sessionStorage.setItem("gameData", JSON.stringify(gameData));
     }
 
-    function spawnConfetti() {
-      for(let i=0;i<50;i++){
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
-        confetti.style.left = Math.random()*100 + '%';
-        confetti.style.background = `hsl(${Math.random()*360}, 70%, 60%)`;
-        gameContainer.appendChild(confetti);
-        setTimeout(()=> confetti.remove(), 1000);
-      }
-    }
+    // Rain animation generator
+function spawnRain(symbol, color) {
+  for (let i = 0; i < 40; i++) { // bigger wave
+    const elem = document.createElement('div');
+    elem.textContent = symbol;
+    elem.style.position = 'absolute';
+    elem.style.left = Math.random() * 100 + '%';
+    elem.style.top = '-2em';
+    elem.style.fontSize = (Math.random()*24 + 16) + 'px';
+    elem.style.opacity = Math.random() * 0.7 + 0.3;
+    elem.style.color = color || 'black';
+    elem.style.pointerEvents = 'none';
+    elem.style.userSelect = 'none';
+    elem.style.transition = 'top 2s linear, opacity 2s linear'; // slower fall
+    gameContainer.appendChild(elem);
+
+    // Animate falling
+    setTimeout(() => {
+      elem.style.top = '120%';
+      elem.style.opacity = 0;
+    }, 50);
+
+    // Remove after animation
+    setTimeout(() => elem.remove(), 2100); // match duration
+  }
+}
+
+
+        // Animate falling
+        setTimeout(() => {
+          elem.style.top = '120%';
+          elem.style.opacity = 0;
+        }, 50);
+
+        // Remove after animation
+        setTimeout(() => elem.remove(), 1300);
+      
+    
+
+    function spawnConfetti() { spawnRain('🎉', `hsl(${Math.random()*360}, 70%, 60%)`); }
+    function spawnSkulls() { spawnRain('💀', 'black'); }
 
     function triggerLoseAnimation() {
       gameContainer.classList.add('shake', 'flash');
+      spawnSkulls();
       setTimeout(()=> gameContainer.classList.remove('shake','flash'), 300);
     }
 
