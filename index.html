@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="google-site-verification" content="wpNb7U0uT-n569p5bdSrx-Wb2VBI5rwaPpH2iQOry_M" />
   <title>Guess the Number</title>
   <style>
     body {
@@ -18,24 +17,46 @@
     }
     .game {
       text-align: center;
-      background: white;
+      background: rgba(255, 255, 255, 0.639);
       padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
       width: 90%;
       max-width: 500px;
       position: relative;
+      animation: fadin 1s ease-in-out;
     }
     h1 { margin-bottom: 20px; }
     #guessInput {
-      width: 200px;
-      padding: 12px;
-      font-size: 1.2rem;
+      width: 220px;
+      padding: 12px 18px;
+      font-size: 1.1rem;
       margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #28a745;
+      background: #28a745;
+      color: #fff;
+      text-align: center;
+      transition: background 0.3s, box-shadow 0.3s, transform 0.2s, border-color 0.3s;
+    }
+    #guessInput::placeholder {
+      color: rgba(255,255,255,0.8);
+    }
+    #guessInput:hover,
+    #guessInput:focus {
+      outline: none;
+      background: #e53935;
+      border-color: #e53935;
+      box-shadow: 0 0 25px 6px #ff1744, 0 2px 8px rgba(0,0,0,0.15);
+      transform: scale(1.03) rotate(-2.5deg);
+      transition-duration: 0.5s;
     }
     .game-btn {
       background-color: #28a745;
-      color: white;
+      color: #fff;
       cursor: pointer;
       font-size: 1rem;
       padding: 12px 20px;
@@ -50,8 +71,9 @@
     .game-btn:hover {
       background-color: #e53935;
       color: #fff;
-      box-shadow: 0 0 20px 4px #ff1744, 0 2px 8px rgba(0,0,0,0.15);
-      transform: scale(1.07) rotate(-2deg);
+      box-shadow: 0 0 40px 8px #ff1744, 0 2px 8px rgba(0,0,0,0.15);
+      transform: scale(1.07) rotate(-2.5deg);
+      transition-duration: 0.5s;
     }
     .game-btn::after {
       content: "";
@@ -132,7 +154,7 @@
       levelEl.textContent = "Level: " + gameData.level;
       rangeEl.textContent = "Guess a number between 1 and " + maxRangeForLevel(gameData.level);
       attemptsEl.textContent = "Attempts left: " + gameData.attempts;
-      messageEl.textContent = gameData.lastMessage || "";
+      messageEl.innerHTML = gameData.lastMessage || "";
       sessionStorage.setItem("gameData", JSON.stringify(gameData));
     }
 
@@ -211,9 +233,13 @@ function spawnRain(symbol, color) {
           gameData.attempts = attemptsForLevel(1);
           gameData.number = Math.floor(Math.random() * maxRangeForLevel(1)) + 1;
         } else {
-          gameData.lastMessage = guess < gameData.number
+          const baseMessage = guess < gameData.number
             ? `You guessed ${guess} → Too low! Attempts left: ${gameData.attempts}`
             : `You guessed ${guess} → Too high! Attempts left: ${gameData.attempts}`;
+          const nearlyThere = Math.abs(guess - gameData.number) <= 5
+            ? "<br/>🔥 Almost there! You're within 5 of the right number."
+            : "";
+          gameData.lastMessage = baseMessage + nearlyThere;
         }
       }
 
